@@ -21,8 +21,8 @@ jobs:
           HF_SPACE_REPO_ID: ${{ secrets.HF_SPACE_REPO_ID }}
         run: |
           if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE_REPO_ID" ]; then
-            echo "Skipping deploy: set HF_TOKEN and HF_SPACE_REPO_ID in repo Secrets."
-            exit 0
+            echo "::error::Missing secrets. Add HF_TOKEN and HF_SPACE_REPO_ID in Settings → Secrets and variables → Actions."
+            exit 1
           fi
           pip install huggingface_hub --quiet
           python .github/scripts/deploy_space.py
