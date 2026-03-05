@@ -1,4 +1,5 @@
-from src.data.loader import load_listings, load_listings_from_images, get_listing_by_id, get_image_path
+from src.data.loader import (get_image_path, get_listing_by_id, load_listings,
+                             load_listings_from_images)
 from src.data.splitter import create_splits, load_split_ids
 
 __all__ = [

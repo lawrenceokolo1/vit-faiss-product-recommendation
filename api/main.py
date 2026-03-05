@@ -9,6 +9,7 @@ from pathlib import Path
 # Load .env so HF_TOKEN, MLFLOW_TRACKING_URI etc. are set before models load
 try:
     from dotenv import load_dotenv
+
     load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 except ImportError:
     pass
@@ -27,7 +28,9 @@ METADATA_PATH = ARTIFACTS_DIR / "product_metadata.parquet"
 INDEX_IDS_PATH = ARTIFACTS_DIR / "product_index_ids.txt"
 
 app = FastAPI(title="Visual Product Recommendation API", version="1.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
+)
 
 # State
 _extractor = None
@@ -44,10 +47,11 @@ def _load_model_from_artifacts():
     if not INDEX_PATH.exists() or not METADATA_PATH.exists():
         return False
     try:
-        from src.embeddings.extractor import ViTExtractor
-        from src.embeddings.text_encoder import TextEncoder
-        from src.embeddings.indexer import FAISSIndexer
         import pandas as pd
+
+        from src.embeddings.extractor import ViTExtractor
+        from src.embeddings.indexer import FAISSIndexer
+        from src.embeddings.text_encoder import TextEncoder
         from src.utils.config import DEFAULT_FUSION_ALPHA, EMBEDDING_DIM
 
         _extractor = ViTExtractor()
@@ -58,8 +62,12 @@ def _load_model_from_artifacts():
         _fusion_alpha = DEFAULT_FUSION_ALPHA
         _model_version = "1.0"
         recommend.init_recommend(
-            _extractor, _text_encoder, _indexer, _metadata_df,
-            _fusion_alpha, _model_version,
+            _extractor,
+            _text_encoder,
+            _indexer,
+            _metadata_df,
+            _fusion_alpha,
+            _model_version,
         )
         return True
     except Exception as e:
@@ -73,9 +81,10 @@ def _load_model_from_mlflow():
     try:
         import mlflow
         import pandas as pd
+
         from src.embeddings.extractor import ViTExtractor
-        from src.embeddings.text_encoder import TextEncoder
         from src.embeddings.indexer import FAISSIndexer
+        from src.embeddings.text_encoder import TextEncoder
         from src.utils.config import EMBEDDING_DIM, MLFLOW_TRACKING_URI
 
         mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", MLFLOW_TRACKING_URI))
@@ -99,7 +108,9 @@ def startup():
     if _load_model_from_mlflow():
         print("Model loaded from MLflow")
         return
-    print("No model loaded. Run build_index pipeline and ensure artifacts/ has product_index.faiss and product_metadata.parquet.")
+    print(
+        "No model loaded. Run build_index pipeline and ensure artifacts/ has product_index.faiss and product_metadata.parquet."
+    )
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -114,7 +125,8 @@ def health():
 
 @app.get("/model-info", response_model=ModelInfoResponse)
 def model_info():
-    from src.utils.config import VIT_MODEL_NAME, TEXT_MODEL_NAME
+    from src.utils.config import TEXT_MODEL_NAME, VIT_MODEL_NAME
+
     return ModelInfoResponse(
         model_version=_model_version,
         fusion_alpha=_fusion_alpha,

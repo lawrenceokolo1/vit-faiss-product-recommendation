@@ -12,15 +12,9 @@ from typing import Tuple
 
 import pandas as pd
 
-from src.utils.config import (
-    RANDOM_SEED,
-    DEFAULT_QUERY_RATIO,
-    DATA_PROCESSED,
-    TRAIN_IDS_PATH,
-    QUERY_IDS_PATH,
-    INDEX_IDS_PATH,
-    LISTINGS_PARQUET_PATH,
-)
+from src.utils.config import (DATA_PROCESSED, DEFAULT_QUERY_RATIO,
+                              INDEX_IDS_PATH, LISTINGS_PARQUET_PATH,
+                              QUERY_IDS_PATH, RANDOM_SEED, TRAIN_IDS_PATH)
 
 
 def create_splits(
@@ -38,7 +32,9 @@ def create_splits(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if not path.exists():
-        raise FileNotFoundError(f"Listings not found: {path}. Run loader and save_listings_parquet first.")
+        raise FileNotFoundError(
+            f"Listings not found: {path}. Run loader and save_listings_parquet first."
+        )
 
     df = pd.read_parquet(path)
     ids = df["item_id"].astype(str).unique().tolist()

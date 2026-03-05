@@ -34,7 +34,10 @@ def mean_average_precision_at_k(
     if not list_retrieved or not list_relevant:
         return 0.0
     assert len(list_retrieved) == len(list_relevant)
-    aps = [average_precision_at_k(ret, rel, k) for ret, rel in zip(list_retrieved, list_relevant)]
+    aps = [
+        average_precision_at_k(ret, rel, k)
+        for ret, rel in zip(list_retrieved, list_relevant)
+    ]
     return sum(aps) / len(aps)
 
 
@@ -46,7 +49,9 @@ def recall_at_k_set(retrieved_ids: List[str], relevant_ids: set, k: int) -> floa
     return 1.0 if any(rid in relevant_ids for rid in retrieved_ids[:k]) else 0.0
 
 
-def average_precision_at_k_set(retrieved_ids: List[str], relevant_ids: set, k: int) -> float:
+def average_precision_at_k_set(
+    retrieved_ids: List[str], relevant_ids: set, k: int
+) -> float:
     """AP@k when relevant = set of IDs. AP = (1/|relevant|) * sum over relevant of (precision at rank)."""
     relevant_ids = set(relevant_ids)
     if not relevant_ids:

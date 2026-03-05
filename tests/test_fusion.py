@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from src.embeddings.fusion import fuse_embeddings, fuse_batch
+from src.embeddings.fusion import fuse_batch, fuse_embeddings
 
 
 def test_fuse_embeddings_normalized():

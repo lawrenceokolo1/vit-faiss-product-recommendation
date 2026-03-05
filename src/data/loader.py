@@ -13,14 +13,9 @@ from typing import Any, Optional
 
 import pandas as pd
 
-from src.utils.config import (
-    ABO_METADATA_DIR,
-    ABO_IMAGES_DIR,
-    ABO_IMAGES_CSV_PATH,
-    ABO_BENCHMARK_DIR,
-    DATA_PROCESSED,
-    LISTINGS_PARQUET_PATH,
-)
+from src.utils.config import (ABO_BENCHMARK_DIR, ABO_IMAGES_CSV_PATH,
+                              ABO_IMAGES_DIR, ABO_METADATA_DIR, DATA_PROCESSED,
+                              LISTINGS_PARQUET_PATH)
 
 
 def _first_value(items: list[dict], key: str = "value") -> str:
@@ -36,7 +31,11 @@ def _parse_listing(raw: dict) -> dict[str, Any]:
     item_id = raw.get("item_id", "")
     item_name_list = raw.get("item_name", [])
     title = next(
-        (t.get("value", "") for t in item_name_list if isinstance(t, dict) and t.get("language_tag") == "en_US"),
+        (
+            t.get("value", "")
+            for t in item_name_list
+            if isinstance(t, dict) and t.get("language_tag") == "en_US"
+        ),
         _first_value(item_name_list),
     )
     brand = _first_value(raw.get("brand", []))
@@ -61,7 +60,9 @@ def _parse_listing(raw: dict) -> dict[str, Any]:
     }
 
 
-def _load_abo_image_lookup(images_metadata_path: Optional[Path] = None) -> dict[str, str]:
+def _load_abo_image_lookup(
+    images_metadata_path: Optional[Path] = None,
+) -> dict[str, str]:
     """
     Load ABO image_id -> path mapping from images.csv.gz (bridge between main_image_id and hex filenames).
     Prefers data/raw/abo/images/metadata/images.csv.gz; fallback: data/raw/abo/metadata/images.csv.gz.
@@ -132,7 +133,11 @@ def load_listings(
     if not rows:
         return pd.DataFrame()
 
-    df = pd.DataFrame(rows).drop_duplicates(subset=["item_id"], keep="first").reset_index(drop=True)
+    df = (
+        pd.DataFrame(rows)
+        .drop_duplicates(subset=["item_id"], keep="first")
+        .reset_index(drop=True)
+    )
     if "image_path" not in df.columns:
         df["image_path"] = ""
     return df
@@ -202,14 +207,16 @@ def load_listings_from_images(
             continue
         for f in subdir.glob("*.jpg"):
             stem = f.stem
-            rows.append({
-                "item_id": stem,
-                "title": "",
-                "brand": "",
-                "color": "",
-                "material": "",
-                "product_type": "",
-                "main_image_id": stem,
-                "category": "",
-            })
+            rows.append(
+                {
+                    "item_id": stem,
+                    "title": "",
+                    "brand": "",
+                    "color": "",
+                    "material": "",
+                    "product_type": "",
+                    "main_image_id": stem,
+                    "category": "",
+                }
+            )
     return pd.DataFrame(rows)

@@ -10,21 +10,17 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+import pandas as pd
+
 from src.data.splitter import load_split_ids
 from src.evaluation.evaluator import RetrievalEvaluator
-from src.utils.config import (
-    QUERY_IDS_PATH,
-    METADATA_PATH,
-    EVAL_RESULTS_PATH,
-    ARTIFACTS_DIR,
-    ABO_IMAGES_DIR,
-    LISTINGS_PARQUET_PATH,
-)
-
-import pandas as pd
+from src.utils.config import (ABO_IMAGES_DIR, ARTIFACTS_DIR, EVAL_RESULTS_PATH,
+                              LISTINGS_PARQUET_PATH, METADATA_PATH,
+                              QUERY_IDS_PATH)
 
 try:
     import mlflow
+
     MLFLOW_AVAILABLE = True
 except ImportError:
     MLFLOW_AVAILABLE = False
@@ -50,9 +46,13 @@ def run(
     query_ids_path = query_ids_path or QUERY_IDS_PATH
     metadata_path = metadata_path or METADATA_PATH
     if not query_ids_path.exists():
-        raise FileNotFoundError(f"Query IDs not found: {query_ids_path}. Run build_index first to create splits.")
+        raise FileNotFoundError(
+            f"Query IDs not found: {query_ids_path}. Run build_index first to create splits."
+        )
     if not metadata_path.exists():
-        raise FileNotFoundError(f"Metadata not found: {metadata_path}. Run build_index first.")
+        raise FileNotFoundError(
+            f"Metadata not found: {metadata_path}. Run build_index first."
+        )
 
     _, query_ids, _ = load_split_ids()
     if not query_ids:
@@ -70,7 +70,11 @@ def run(
             )
         query_metadata = pd.read_parquet(LISTINGS_PARQUET_PATH)
         # Only keep query_ids that appear in full listings (have image path etc.)
-        query_ids_sub = [q for q in query_ids[:max_queries] if q in query_metadata["item_id"].astype(str).values]
+        query_ids_sub = [
+            q
+            for q in query_ids[:max_queries]
+            if q in query_metadata["item_id"].astype(str).values
+        ]
         if not query_ids_sub:
             raise ValueError("No query IDs found in listings.parquet. Check data.")
         results = evaluator.evaluate_by_category(
@@ -98,12 +102,14 @@ def run(
     if log_mlflow and MLFLOW_AVAILABLE:
         mlflow.set_experiment("visual-product-recommender")
         with mlflow.start_run():
-            mlflow.log_metrics({
-                "recall_at_1": results["recall_at_1"],
-                "recall_at_5": results["recall_at_5"],
-                "recall_at_10": results["recall_at_10"],
-                "map_at_10": results["map_at_10"],
-            })
+            mlflow.log_metrics(
+                {
+                    "recall_at_1": results["recall_at_1"],
+                    "recall_at_5": results["recall_at_5"],
+                    "recall_at_10": results["recall_at_10"],
+                    "map_at_10": results["map_at_10"],
+                }
+            )
             mlflow.log_artifact(str(EVAL_RESULTS_PATH))
 
     return results
@@ -111,14 +117,26 @@ def run(
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--no-fusion", action="store_true", help="Evaluate image-only")
     parser.add_argument("--fusion-alpha", type=float, default=0.7)
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument("--mlflow", action="store_true", help="Log results to MLflow")
-    parser.add_argument("--by-category", action="store_true", default=True, help="Relevant = same category (default)")
-    parser.add_argument("--by-product", action="store_true", help="Relevant = same product (0 when query not in index)")
-    parser.add_argument("--max-queries", type=int, default=500, help="Max number of queries to run")
+    parser.add_argument(
+        "--by-category",
+        action="store_true",
+        default=True,
+        help="Relevant = same category (default)",
+    )
+    parser.add_argument(
+        "--by-product",
+        action="store_true",
+        help="Relevant = same product (0 when query not in index)",
+    )
+    parser.add_argument(
+        "--max-queries", type=int, default=500, help="Max number of queries to run"
+    )
     args = parser.parse_args()
     by_category = not args.by_product
     run(

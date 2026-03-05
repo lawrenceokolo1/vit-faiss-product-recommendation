@@ -12,7 +12,7 @@ import torch
 from PIL import Image
 from transformers import AutoImageProcessor, AutoModel
 
-from src.utils.config import VIT_MODEL_NAME, EMBED_BATCH_SIZE
+from src.utils.config import EMBED_BATCH_SIZE, VIT_MODEL_NAME
 
 
 class ViTExtractor:
@@ -29,7 +29,9 @@ class ViTExtractor:
         with open(path, "rb") as f:
             return Image.open(f).convert("RGB")
 
-    def encode_image(self, image: Union[str, Path, Image.Image, np.ndarray]) -> np.ndarray:
+    def encode_image(
+        self, image: Union[str, Path, Image.Image, np.ndarray]
+    ) -> np.ndarray:
         """Encode a single image to 768-d L2-normalized vector."""
         if isinstance(image, (str, Path)):
             image = self._load_image(image)

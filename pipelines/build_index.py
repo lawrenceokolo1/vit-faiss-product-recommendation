@@ -14,31 +14,23 @@ if str(_ROOT) not in sys.path:
 
 import pandas as pd
 
-from src.data.loader import load_listings, load_listings_from_images, get_image_path, save_listings_parquet
+from src.data.loader import (get_image_path, load_listings,
+                             load_listings_from_images, save_listings_parquet)
 from src.data.splitter import create_splits, load_split_ids
 from src.embeddings.extractor import ViTExtractor
-from src.embeddings.text_encoder import TextEncoder
 from src.embeddings.fusion import fuse_batch
 from src.embeddings.indexer import FAISSIndexer
-from src.utils.config import (
-    ABO_METADATA_DIR,
-    ABO_IMAGES_DIR,
-    LISTINGS_PARQUET_PATH,
-    TRAIN_IDS_PATH,
-    ARTIFACTS_DIR,
-    INDEX_PATH,
-    METADATA_PATH,
-    VIT_MODEL_NAME,
-    TEXT_MODEL_NAME,
-    DEFAULT_FUSION_ALPHA,
-    EMBEDDING_DIM,
-    EMBED_BATCH_SIZE,
-    RANDOM_SEED,
-)
+from src.embeddings.text_encoder import TextEncoder
+from src.utils.config import (ABO_IMAGES_DIR, ABO_METADATA_DIR, ARTIFACTS_DIR,
+                              DEFAULT_FUSION_ALPHA, EMBED_BATCH_SIZE,
+                              EMBEDDING_DIM, INDEX_PATH, LISTINGS_PARQUET_PATH,
+                              METADATA_PATH, RANDOM_SEED, TEXT_MODEL_NAME,
+                              TRAIN_IDS_PATH, VIT_MODEL_NAME)
 
 # Optional MLflow (Phase 4)
 try:
     import mlflow
+
     MLFLOW_AVAILABLE = True
 except ImportError:
     MLFLOW_AVAILABLE = False
@@ -67,13 +59,17 @@ def run(
     elif from_images_only:
         df = load_listings_from_images(images_dir)
         if df.empty:
-            raise FileNotFoundError(f"No images under {images_dir}. Download ABO images first.")
+            raise FileNotFoundError(
+                f"No images under {images_dir}. Download ABO images first."
+            )
         save_listings_parquet(df)
         df = pd.read_parquet(LISTINGS_PARQUET_PATH)
     else:
         df = load_listings(metadata_dir=metadata_dir)
         if df.empty:
-            raise FileNotFoundError(f"No listings found under {metadata_dir}. Download ABO metadata first.")
+            raise FileNotFoundError(
+                f"No listings found under {metadata_dir}. Download ABO metadata first."
+            )
         save_listings_parquet(df)
         df = pd.read_parquet(LISTINGS_PARQUET_PATH)
 
@@ -87,7 +83,12 @@ def run(
         raise ValueError("No index IDs from split. Check data/processed/.")
 
     # Restrict to products we have in our split
-    index_df = df[df["item_id"].astype(str).isin(index_ids)].set_index("item_id").loc[index_ids].reset_index()
+    index_df = (
+        df[df["item_id"].astype(str).isin(index_ids)]
+        .set_index("item_id")
+        .loc[index_ids]
+        .reset_index()
+    )
     id_list = index_df["item_id"].astype(str).tolist()
 
     extractor = ViTExtractor(model_name=VIT_MODEL_NAME)
@@ -100,7 +101,11 @@ def run(
             str(row["item_id"]),
             str(row.get("main_image_id", "")),
             images_dir,
-            image_path_rel=row.get("image_path") if "image_path" in row and pd.notna(row.get("image_path")) else None,
+            image_path_rel=(
+                row.get("image_path")
+                if "image_path" in row and pd.notna(row.get("image_path"))
+                else None
+            ),
         )
         image_paths.append(img_path)
         t = f"{row.get('title', '')} {row.get('product_type', '')} {row.get('color', '')} {row.get('material', '')}"
@@ -109,7 +114,9 @@ def run(
     # Filter to existing images only
     valid_indices = [i for i, p in enumerate(image_paths) if p.exists()]
     if not valid_indices:
-        raise FileNotFoundError("No product images found. Download ABO images or point images_dir to correct path.")
+        raise FileNotFoundError(
+            "No product images found. Download ABO images or point images_dir to correct path."
+        )
     id_list = [id_list[i] for i in valid_indices]
     index_df = index_df.iloc[valid_indices].reset_index(drop=True)
     image_paths = [image_paths[i] for i in valid_indices]
@@ -127,7 +134,9 @@ def run(
     ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
     indexer.save(INDEX_PATH, ARTIFACTS_DIR / "product_index_ids.txt")
     index_df.to_parquet(METADATA_PATH, index=False)
-    index_size_mb = INDEX_PATH.stat().st_size / (1024 * 1024) if INDEX_PATH.exists() else 0
+    index_size_mb = (
+        INDEX_PATH.stat().st_size / (1024 * 1024) if INDEX_PATH.exists() else 0
+    )
 
     # Peak RAM (ru_maxrss: bytes on macOS, KB on Linux)
     peak_ram_mb = None
@@ -151,15 +160,17 @@ def run(
     if use_mlflow and MLFLOW_AVAILABLE:
         mlflow.set_experiment("visual-product-recommender")
         with mlflow.start_run():
-            mlflow.log_params({
-                "model_name": VIT_MODEL_NAME,
-                "text_model": TEXT_MODEL_NAME,
-                "fusion_alpha": fusion_alpha,
-                "embedding_dim": EMBEDDING_DIM,
-                "index_type": "IndexFlatIP",
-                "num_products": len(id_list),
-                "dataset": "ABO-v1",
-            })
+            mlflow.log_params(
+                {
+                    "model_name": VIT_MODEL_NAME,
+                    "text_model": TEXT_MODEL_NAME,
+                    "fusion_alpha": fusion_alpha,
+                    "embedding_dim": EMBEDDING_DIM,
+                    "index_type": "IndexFlatIP",
+                    "num_products": len(id_list),
+                    "dataset": "ABO-v1",
+                }
+            )
             mlflow.log_metrics(metrics)
             mlflow.log_artifact(str(INDEX_PATH))
             mlflow.log_artifact(str(METADATA_PATH))
@@ -171,12 +182,28 @@ def run(
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--limit", type=int, default=None, help="Limit number of products (e.g. 1000 for smoke test)")
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Limit number of products (e.g. 1000 for smoke test)",
+    )
     parser.add_argument("--fusion-alpha", type=float, default=DEFAULT_FUSION_ALPHA)
     parser.add_argument("--no-mlflow", action="store_true", help="Skip MLflow logging")
     parser.add_argument("--seed", type=int, default=RANDOM_SEED)
-    parser.add_argument("--from-images-only", action="store_true", help="Build listing table from images on disk (use for ABO small when metadata IDs don't match image filenames)")
+    parser.add_argument(
+        "--from-images-only",
+        action="store_true",
+        help="Build listing table from images on disk (use for ABO small when metadata IDs don't match image filenames)",
+    )
     args = parser.parse_args()
-    out = run(limit=args.limit, fusion_alpha=args.fusion_alpha, use_mlflow=not args.no_mlflow, seed=args.seed, from_images_only=args.from_images_only)
+    out = run(
+        limit=args.limit,
+        fusion_alpha=args.fusion_alpha,
+        use_mlflow=not args.no_mlflow,
+        seed=args.seed,
+        from_images_only=args.from_images_only,
+    )
     print("Build complete:", out)

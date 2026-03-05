@@ -1,9 +1,10 @@
 """Tests for FAISS indexer."""
 
-import numpy as np
-import pytest
 import tempfile
 from pathlib import Path
+
+import numpy as np
+import pytest
 
 from src.embeddings.indexer import FAISSIndexer
 from src.utils.config import EMBEDDING_DIM

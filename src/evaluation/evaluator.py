@@ -3,29 +3,21 @@ Run eProduct-style retrieval evaluation: embed query set, search index, compute 
 """
 
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 import pandas as pd
 
+from src.data.loader import get_image_path
 from src.embeddings.extractor import ViTExtractor
-from src.embeddings.text_encoder import TextEncoder
 from src.embeddings.fusion import fuse_embeddings
 from src.embeddings.indexer import FAISSIndexer
-from src.evaluation.metrics import (
-    recall_at_k,
-    mean_average_precision_at_k,
-    recall_at_k_set,
-    mean_average_precision_at_k_set,
-)
-from src.utils.config import (
-    INDEX_PATH,
-    METADATA_PATH,
-    ARTIFACTS_DIR,
-    DEFAULT_FUSION_ALPHA,
-    EMBED_BATCH_SIZE,
-)
-from src.data.loader import get_image_path
-from src.utils.config import ABO_IMAGES_DIR
+from src.embeddings.text_encoder import TextEncoder
+from src.evaluation.metrics import (mean_average_precision_at_k,
+                                    mean_average_precision_at_k_set,
+                                    recall_at_k, recall_at_k_set)
+from src.utils.config import (ABO_IMAGES_DIR, ARTIFACTS_DIR,
+                              DEFAULT_FUSION_ALPHA, EMBED_BATCH_SIZE,
+                              INDEX_PATH, METADATA_PATH)
 
 
 class RetrievalEvaluator:
@@ -91,7 +83,11 @@ class RetrievalEvaluator:
                 str(row["item_id"]),
                 str(row.get("main_image_id", "")),
                 images_dir or ABO_IMAGES_DIR,
-                image_path_rel=row.get("image_path") if "image_path" in row and pd.notna(row.get("image_path")) else None,
+                image_path_rel=(
+                    row.get("image_path")
+                    if "image_path" in row and pd.notna(row.get("image_path"))
+                    else None
+                ),
             )
             if not img_path.exists():
                 list_retrieved.append([])
@@ -112,9 +108,15 @@ class RetrievalEvaluator:
             list_retrieved.append(result[0][0] if result else [])
             list_relevant.append(qid)
 
-        r1 = sum(recall_at_k(ret, rel, 1) for ret, rel in zip(list_retrieved, list_relevant)) / max(len(list_retrieved), 1)
-        r5 = sum(recall_at_k(ret, rel, 5) for ret, rel in zip(list_retrieved, list_relevant)) / max(len(list_retrieved), 1)
-        r10 = sum(recall_at_k(ret, rel, 10) for ret, rel in zip(list_retrieved, list_relevant)) / max(len(list_retrieved), 1)
+        r1 = sum(
+            recall_at_k(ret, rel, 1) for ret, rel in zip(list_retrieved, list_relevant)
+        ) / max(len(list_retrieved), 1)
+        r5 = sum(
+            recall_at_k(ret, rel, 5) for ret, rel in zip(list_retrieved, list_relevant)
+        ) / max(len(list_retrieved), 1)
+        r10 = sum(
+            recall_at_k(ret, rel, 10) for ret, rel in zip(list_retrieved, list_relevant)
+        ) / max(len(list_retrieved), 1)
         map10 = mean_average_precision_at_k(list_retrieved, list_relevant, 10)
 
         return {
@@ -148,7 +150,9 @@ class RetrievalEvaluator:
         # Build category -> set of index product IDs (from index metadata only)
         if category_col not in index_metadata_df.columns:
             index_metadata_df = index_metadata_df.copy()
-            index_metadata_df[category_col] = index_metadata_df.get("product_type", "") or ""
+            index_metadata_df[category_col] = (
+                index_metadata_df.get("product_type", "") or ""
+            )
         cat_to_ids: Dict[str, set] = {}
         for _, row in index_metadata_df.iterrows():
             c = str(row.get(category_col, "") or "").strip()
@@ -160,7 +164,9 @@ class RetrievalEvaluator:
         list_relevant_sets = []
 
         for qid in query_ids:
-            row = query_metadata_df[query_metadata_df["item_id"].astype(str) == str(qid)]
+            row = query_metadata_df[
+                query_metadata_df["item_id"].astype(str) == str(qid)
+            ]
             if row.empty:
                 list_retrieved.append([])
                 list_relevant_sets.append(set())
@@ -170,7 +176,11 @@ class RetrievalEvaluator:
                 str(row["item_id"]),
                 str(row.get("main_image_id", "")),
                 images_dir or ABO_IMAGES_DIR,
-                image_path_rel=row.get("image_path") if "image_path" in row and pd.notna(row.get("image_path")) else None,
+                image_path_rel=(
+                    row.get("image_path")
+                    if "image_path" in row and pd.notna(row.get("image_path"))
+                    else None
+                ),
             )
             if not img_path.exists():
                 list_retrieved.append([])
@@ -197,9 +207,18 @@ class RetrievalEvaluator:
             list_retrieved.append(retrieved)
             list_relevant_sets.append(relevant_set)
 
-        r1 = sum(recall_at_k_set(ret, rel, 1) for ret, rel in zip(list_retrieved, list_relevant_sets)) / max(len(list_retrieved), 1)
-        r5 = sum(recall_at_k_set(ret, rel, 5) for ret, rel in zip(list_retrieved, list_relevant_sets)) / max(len(list_retrieved), 1)
-        r10 = sum(recall_at_k_set(ret, rel, 10) for ret, rel in zip(list_retrieved, list_relevant_sets)) / max(len(list_retrieved), 1)
+        r1 = sum(
+            recall_at_k_set(ret, rel, 1)
+            for ret, rel in zip(list_retrieved, list_relevant_sets)
+        ) / max(len(list_retrieved), 1)
+        r5 = sum(
+            recall_at_k_set(ret, rel, 5)
+            for ret, rel in zip(list_retrieved, list_relevant_sets)
+        ) / max(len(list_retrieved), 1)
+        r10 = sum(
+            recall_at_k_set(ret, rel, 10)
+            for ret, rel in zip(list_retrieved, list_relevant_sets)
+        ) / max(len(list_retrieved), 1)
         map10 = mean_average_precision_at_k_set(list_retrieved, list_relevant_sets, 10)
 
         return {

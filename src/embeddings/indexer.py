@@ -10,7 +10,7 @@ from typing import List, Tuple
 import faiss
 import numpy as np
 
-from src.utils.config import INDEX_PATH, ARTIFACTS_DIR
+from src.utils.config import ARTIFACTS_DIR, INDEX_PATH
 
 
 class FAISSIndexer:
@@ -40,17 +40,25 @@ class FAISSIndexer:
         scores, indices = self.index.search(query, min(k, len(self.id_list)))
         return scores, indices
 
-    def search_ids(self, query: np.ndarray, k: int = 10) -> List[Tuple[List[str], List[float]]]:
+    def search_ids(
+        self, query: np.ndarray, k: int = 10
+    ) -> List[Tuple[List[str], List[float]]]:
         """Same as search but returns list of (id_list, score_list) per query row."""
         scores, indices = self.search(query, k)
         out = []
         for i in range(scores.shape[0]):
-            ids = [self.id_list[int(j)] for j in indices[i] if 0 <= int(j) < len(self.id_list)]
+            ids = [
+                self.id_list[int(j)]
+                for j in indices[i]
+                if 0 <= int(j) < len(self.id_list)
+            ]
             sc = scores[i].tolist()[: len(ids)]
             out.append((ids, sc))
         return out
 
-    def save(self, index_path: Path | None = None, id_list_path: Path | None = None) -> None:
+    def save(
+        self, index_path: Path | None = None, id_list_path: Path | None = None
+    ) -> None:
         """Save FAISS index and ID list (indexer loads both)."""
         if self.index is None:
             raise RuntimeError("No index to save")
@@ -61,7 +69,9 @@ class FAISSIndexer:
         with open(id_list_path, "w") as f:
             f.write("\n".join(self.id_list))
 
-    def load(self, index_path: Path | None = None, id_list_path: Path | None = None) -> None:
+    def load(
+        self, index_path: Path | None = None, id_list_path: Path | None = None
+    ) -> None:
         """Load FAISS index and ID list."""
         index_path = index_path or INDEX_PATH
         id_list_path = id_list_path or (ARTIFACTS_DIR / "product_index_ids.txt")

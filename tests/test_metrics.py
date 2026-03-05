@@ -2,12 +2,9 @@
 
 import pytest
 
-from src.evaluation.metrics import (
-    recall_at_k,
-    precision_at_k,
-    average_precision_at_k,
-    mean_average_precision_at_k,
-)
+from src.evaluation.metrics import (average_precision_at_k,
+                                    mean_average_precision_at_k,
+                                    precision_at_k, recall_at_k)
 
 
 def test_recall_at_k():

@@ -62,8 +62,10 @@ async def recommend(
         raise HTTPException(503, "Model not loaded")
     contents = await image.read()
     try:
-        from PIL import Image
         import io
+
+        from PIL import Image
+
         img = Image.open(io.BytesIO(contents)).convert("RGB")
     except Exception as e:
         raise HTTPException(400, f"Invalid image: {e}")
@@ -73,6 +75,7 @@ async def recommend(
     if _text_encoder and _fusion_alpha < 1.0:
         text_emb = _text_encoder.encode_text("")
         from src.embeddings.fusion import fuse_embeddings
+
         q_emb = fuse_embeddings(img_emb, text_emb, _fusion_alpha)
     else:
         q_emb = img_emb
@@ -84,10 +87,14 @@ async def recommend(
     for i, (item_id, score) in enumerate(zip(ids, scores)):
         row = _metadata_df[_metadata_df["item_id"].astype(str) == str(item_id)]
         if row.empty:
-            results.append(ProductResult(item_id=item_id, similarity_score=float(score)))
+            results.append(
+                ProductResult(item_id=item_id, similarity_score=float(score))
+            )
         else:
             row = row.iloc[0]
-            results.append(_row_to_result(row.to_dict(), score, str(row.get("main_image_id", ""))))
+            results.append(
+                _row_to_result(row.to_dict(), score, str(row.get("main_image_id", "")))
+            )
 
     return RecommendResponse(
         query_id=str(uuid.uuid4()),
@@ -113,12 +120,15 @@ async def recommend_by_id(
     row = row.iloc[0]
     from src.data.loader import get_image_path
     from src.utils.config import ABO_IMAGES_DIR
+
     _img_rel = row.get("image_path")
     img_path = get_image_path(
         str(row["item_id"]),
         str(row.get("main_image_id", "")),
         ABO_IMAGES_DIR,
-        image_path_rel=str(_img_rel).strip() if _img_rel and str(_img_rel) != "nan" else None,
+        image_path_rel=(
+            str(_img_rel).strip() if _img_rel and str(_img_rel) != "nan" else None
+        ),
     )
     if not img_path.exists():
         raise HTTPException(404, f"Image not found for product {item_id}")
@@ -133,6 +143,7 @@ async def recommend_by_id(
             str(row.get("material", "")),
         )
         from src.embeddings.fusion import fuse_embeddings
+
         q_emb = fuse_embeddings(img_emb, text_emb, _fusion_alpha)
     else:
         q_emb = img_emb
@@ -149,7 +160,9 @@ async def recommend_by_id(
             results.append(ProductResult(item_id=pid, similarity_score=float(score)))
         else:
             r = r.iloc[0]
-            results.append(_row_to_result(r.to_dict(), score, str(r.get("main_image_id", ""))))
+            results.append(
+                _row_to_result(r.to_dict(), score, str(r.get("main_image_id", "")))
+            )
         if len(results) >= top_k:
             break
 
@@ -178,14 +191,17 @@ async def recommend_multimodal(
     q_emb = None
     if image and image.filename:
         contents = await image.read()
-        from PIL import Image
         import io
+
         import numpy as np
+        from PIL import Image
+
         img = Image.open(io.BytesIO(contents)).convert("RGB")
         img_emb = _extractor.encode_image(img)
         if text_query and _text_encoder:
             text_emb = _text_encoder.encode_text(text_query)
             from src.embeddings.fusion import fuse_embeddings
+
             q_emb = fuse_embeddings(img_emb, text_emb, _fusion_alpha)
         else:
             q_emb = img_emb
@@ -203,7 +219,9 @@ async def recommend_multimodal(
             results.append(ProductResult(item_id=pid, similarity_score=float(score)))
         else:
             r = r.iloc[0]
-            results.append(_row_to_result(r.to_dict(), score, str(r.get("main_image_id", ""))))
+            results.append(
+                _row_to_result(r.to_dict(), score, str(r.get("main_image_id", "")))
+            )
     return RecommendResponse(
         query_id=str(uuid.uuid4()),
         model_version=_model_version,
