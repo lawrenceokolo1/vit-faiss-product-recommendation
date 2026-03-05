@@ -1,0 +1,27 @@
+from src.utils.config import (
+    ROOT_DIR,
+    DATA_RAW,
+    DATA_PROCESSED,
+    ARTIFACTS_DIR,
+    INDEX_PATH,
+    METADATA_PATH,
+    VIT_MODEL_NAME,
+    TEXT_MODEL_NAME,
+    EMBEDDING_DIM,
+    DEFAULT_FUSION_ALPHA,
+    RANDOM_SEED,
+)
+
+__all__ = [
+    "ROOT_DIR",
+    "DATA_RAW",
+    "DATA_PROCESSED",
+    "ARTIFACTS_DIR",
+    "INDEX_PATH",
+    "METADATA_PATH",
+    "VIT_MODEL_NAME",
+    "TEXT_MODEL_NAME",
+    "EMBEDDING_DIM",
+    "DEFAULT_FUSION_ALPHA",
+    "RANDOM_SEED",
+]
