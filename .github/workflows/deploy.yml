@@ -1,0 +1,28 @@
+# CD: Deploy Gradio app to Hugging Face Space when CI passes (push to main)
+name: Deploy to HF Space
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "space/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE_REPO_ID: ${{ secrets.HF_SPACE_REPO_ID }}
+        run: |
+          if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE_REPO_ID" ]; then
+            echo "Skipping deploy: set HF_TOKEN and HF_SPACE_REPO_ID in repo Secrets."
+            exit 0
+          fi
+          pip install huggingface_hub --quiet
+          python .github/scripts/deploy_space.py
