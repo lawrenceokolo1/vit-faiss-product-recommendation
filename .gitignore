@@ -14,6 +14,10 @@ data/processed/
 artifacts/
 mlflow/
 *.faiss
+# Optional in-Space index (index lives on HF Dataset; avoid duplicating in repo)
+space/assets/*.faiss
+space/assets/*.parquet
+space/assets/*.txt
 
 # -----------------------------------------------------------------------------
 # Python
